@@ -11,29 +11,29 @@ const colorStyles: Record<string, { bg: string; border: string; text: string; gl
 
 export default function KPICards({ kpis }: { kpis: KPICard[] }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
       {kpis.map((kpi, idx) => {
         const style = colorStyles[kpi.color];
         return (
           <div
             key={kpi.label}
-            className={`relative rounded-lg ${style.bg} border ${style.border} ${style.glow} p-4 overflow-hidden group panel-animate`}
+            className={`relative rounded-lg ${style.bg} border ${style.border} ${style.glow} p-2.5 overflow-hidden group panel-animate`}
             style={{ animationDelay: `${idx * 80}ms` }}
           >
             <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="relative z-10 flex items-start justify-between">
               <div>
-                <p className="text-cyan-200/70 text-xs mb-1">{kpi.label}</p>
+                <p className="text-cyan-200/70 text-[10px] mb-0.5">{kpi.label}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-bold ${style.text} number-roll`}>{kpi.value}</span>
-                  <span className="text-gray-400 text-xs">{kpi.unit}</span>
+                  <span className={`text-lg font-bold ${style.text} number-roll`}>{kpi.value}</span>
+                  <span className="text-gray-400 text-[10px]">{kpi.unit}</span>
                 </div>
-                <div className={`flex items-center gap-1 mt-2 text-xs ${kpi.trendUp ? 'text-green-400' : 'text-orange-400'}`}>
+                <div className={`flex items-center gap-1 mt-1 text-[10px] ${kpi.trendUp ? 'text-green-400' : 'text-orange-400'}`}>
                   <span className="font-bold">{kpi.trendUp ? '↑' : '↓'}</span>
                   <span>{kpi.trend}</span>
                 </div>
               </div>
-              <span className="text-2xl float">{kpi.icon}</span>
+              <span className="text-xl float">{kpi.icon}</span>
             </div>
           </div>
         );

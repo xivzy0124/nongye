@@ -228,6 +228,73 @@ function makeGenericProvinceData(name: string, capital?: { city: string; coord: 
   };
 }
 
+ function makeProvinceWithCities(
+  name: string,
+  vegetable: string,
+  weather: { weather: string; temp: string; icon: string },
+  basePrice: number,
+  citiesConfig: { city: string; coord: [number, number] }[],
+  categories: { name: string; color: string }[],
+  targets: { name: string; color: string; category: string }[],
+  priceTrend: { years: string[]; avgPrice: number[]; maxPrice: number[] },
+  volumeMonitor: { total: string; sub: string; indicators: string[]; values: number[] },
+  priceFluctuation: { times: string[]; prices: number[]; current: string },
+  warnings: CityData['warnings']
+): ProvinceData {
+  const provinceBase = makeCityData(name, name, vegetable, weather, basePrice, warnings);
+  const cities: Record<string, CityData> = {};
+  const mapCities: { name: string; value: [number, number, number] }[] = [];
+
+  citiesConfig.forEach(({ city, coord }) => {
+    const cityPrice = Number((basePrice * (0.9 + Math.random() * 0.25)).toFixed(1));
+    const cityData = makeCityData(name, city, vegetable, weather, cityPrice, warnings);
+    cities[city] = cityData;
+    mapCities.push({ name: city, value: [...coord, cityPrice] });
+  });
+
+  const links = targets.map(t => ({ source: t.category, target: t.name, value: Math.floor(60 + Math.random() * 160) }));
+
+  return {
+    ...provinceBase,
+    name,
+    weather: {
+      city: citiesConfig[0]?.city || name,
+      days: [
+        { date: '今日', day: '1/22', weather: weather.weather, temp: weather.temp, icon: weather.icon },
+        { date: '明日', day: '1/23', weather: '多云', temp: adjustTemp(weather.temp, -1), icon: '☁️' },
+        { date: '', day: '1/24', weather: '晴', temp: adjustTemp(weather.temp, 1), icon: '☀️' },
+        { date: '', day: '1/25', weather: '阴', temp: adjustTemp(weather.temp, 0), icon: '⛅' },
+        { date: '', day: '1/26', weather: '小雨', temp: adjustTemp(weather.temp, -2), icon: '🌧️' },
+        { date: '', day: '1/27', weather: '晴', temp: adjustTemp(weather.temp, 2), icon: '☀️' },
+      ]
+    },
+    vegetablePrice: {
+      vegetable,
+      options: [vegetable, '黄瓜', '西红柿'],
+      forecast: Array.from({ length: 7 }, (_, i) => {
+        const date = `09-${20 + i}`;
+        const p = (basePrice * (0.9 + Math.random() * 0.25)).toFixed(1);
+        const percent = `${60 + Math.floor(Math.random() * 38)}%`;
+        return { date, temp: `${p}元/斤`, percent };
+      })
+    },
+    flowAnalysis: { categories, targets, links },
+    priceTrend,
+    volumeMonitor,
+    priceFluctuation: {
+      name: `${vegetable} 价格波动监测分析`,
+      vegetable,
+      times: priceFluctuation.times,
+      prices: priceFluctuation.prices,
+      current: priceFluctuation.current
+    },
+    cities,
+    priceLevel: basePrice,
+    mapCities,
+    mapLines: [],
+  };
+}
+
 export const mockData: Record<string, ProvinceData> = {
   '河南省': {
     name: '河南省',
@@ -708,7 +775,297 @@ export const mockData: Record<string, ProvinceData> = {
       { name: '临沂市', value: [118.35, 35.05, 6.8] },
     ],
     mapLines: []
-  }
+  },
+  '湖北省': makeProvinceWithCities(
+    '湖北省',
+    '莲藕',
+    { weather: '小雨', temp: '18°/25°', icon: '🌧️' },
+    4.5,
+    [
+      { city: '武汉市', coord: [114.31, 30.52] },
+      { city: '宜昌市', coord: [111.29, 30.70] },
+      { city: '襄阳市', coord: [112.20, 32.04] },
+      { city: '荆州市', coord: [112.24, 30.33] },
+      { city: '黄冈市', coord: [114.87, 30.45] },
+    ],
+    [
+      { name: '水生类', color: '#00d4ff' },
+      { name: '叶菜类', color: '#00ffcc' },
+      { name: '茄果类', color: '#66ff99' },
+      { name: '根茎类', color: '#ff66b2' },
+      { name: '豆类', color: '#9966ff' },
+      { name: '菌菇类', color: '#ffcc00' },
+      { name: '葱蒜类', color: '#00ccff' },
+      { name: '特色类', color: '#ff9966' },
+    ],
+    [
+      { name: '洪湖莲藕', color: '#00d4ff', category: '水生类' },
+      { name: '武汉菜薹', color: '#00a8cc', category: '叶菜类' },
+      { name: '宜昌西红柿', color: '#0088aa', category: '茄果类' },
+      { name: '襄阳白萝卜', color: '#00ffcc', category: '根茎类' },
+      { name: '荆州四季豆', color: '#cc00ff', category: '豆类' },
+      { name: '随州香菇', color: '#ff66b2', category: '菌菇类' },
+      { name: '恩施大蒜', color: '#66ff99', category: '葱蒜类' },
+      { name: '潜江小龙虾', color: '#ffcc00', category: '特色类' },
+      { name: '孝感韭菜', color: '#00ccff', category: '葱蒜类' },
+      { name: '荆门黄瓜', color: '#00ff88', category: '茄果类' },
+      { name: '黄石菠菜', color: '#ff4444', category: '叶菜类' },
+      { name: '十堰木耳', color: '#00ffaa', category: '菌菇类' },
+    ],
+    {
+      years: ['2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'],
+      avgPrice: [4.5, 4.2, 4.8, 4.6, 4.3, 4.9, 4.1, 5.0, 4.7, 4.4],
+      maxPrice: [4.9, 4.6, 5.2, 5.0, 4.7, 5.3, 4.5, 5.4, 5.1, 4.8]
+    },
+    {
+      total: '45,000',
+      sub: '9,200',
+      indicators: ['产地批发', '网购运输', '销量监测', '物流运输', '产数监测'],
+      values: [78, 68, 82, 88, 74]
+    },
+    {
+      times: ['07:20', '07:24', '07:27', '07:30', '07:32', '07:45', '07:48', '07:50', '07:57', '08:01', '08:14', '08:17', '08:25', '08:30'],
+      prices: [4.3, 4.4, 4.5, 4.6, 4.5, 4.4, 4.3, 4.5, 4.6, 4.5, 4.4, 4.5, 4.6, 4.5],
+      current: '4.5'
+    },
+    [
+      { id: 1, level: '暴雨蓝色', levelColor: 'cyan', time: '09:10:00', title: '湖北江汉平原有明显降雨，莲藕采收需关注田间排水。', number: '4001' },
+      { id: 2, level: '高温预警', levelColor: 'orange', time: '12:30:00', title: '鄂东地区午后高温，叶菜类注意遮阴保鲜。', number: '4002' },
+      { id: 3, level: '异常数据', levelColor: 'red', time: '15:00:00', title: '武汉批发市场到货量波动，莲藕价格短期上行。', number: '4003' },
+    ]
+  ),
+  '湖南省': makeProvinceWithCities(
+    '湖南省',
+    '辣椒',
+    { weather: '多云', temp: '22°/30°', icon: '☁️' },
+    5.2,
+    [
+      { city: '长沙市', coord: [112.98, 28.21] },
+      { city: '岳阳市', coord: [113.13, 29.37] },
+      { city: '常德市', coord: [111.70, 29.05] },
+      { city: '衡阳市', coord: [112.57, 26.90] },
+      { city: '株洲市', coord: [113.15, 27.83] },
+    ],
+    [
+      { name: '辣椒类', color: '#00d4ff' },
+      { name: '叶菜类', color: '#00ffcc' },
+      { name: '瓜果类', color: '#66ff99' },
+      { name: '根茎类', color: '#ff66b2' },
+      { name: '豆类', color: '#9966ff' },
+      { name: '菌菇类', color: '#ffcc00' },
+      { name: '葱蒜类', color: '#00ccff' },
+      { name: '特色类', color: '#ff9966' },
+    ],
+    [
+      { name: '长沙辣椒', color: '#00d4ff', category: '辣椒类' },
+      { name: '岳阳生菜', color: '#00a8cc', category: '叶菜类' },
+      { name: '常德冬瓜', color: '#0088aa', category: '瓜果类' },
+      { name: '衡阳白萝卜', color: '#00ffcc', category: '根茎类' },
+      { name: '株洲豆角', color: '#cc00ff', category: '豆类' },
+      { name: '湘潭香菇', color: '#ff66b2', category: '菌菇类' },
+      { name: '永州大葱', color: '#66ff99', category: '葱蒜类' },
+      { name: '湘西腊肉', color: '#ffcc00', category: '特色类' },
+      { name: '益阳黄瓜', color: '#00ccff', category: '瓜果类' },
+      { name: '邵阳西红柿', color: '#00ff88', category: '辣椒类' },
+      { name: '郴州芹菜', color: '#ff4444', category: '叶菜类' },
+      { name: '怀化生姜', color: '#00ffaa', category: '葱蒜类' },
+    ],
+    {
+      years: ['2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'],
+      avgPrice: [5.0, 4.7, 5.3, 5.1, 4.8, 5.4, 4.6, 5.5, 5.2, 4.9],
+      maxPrice: [5.4, 5.1, 5.7, 5.5, 5.2, 5.8, 5.0, 5.9, 5.6, 5.3]
+    },
+    {
+      total: '51,000',
+      sub: '11,500',
+      indicators: ['产地直发', '电商运输', '批发监测', '冷链物流', '零售数据'],
+      values: [80, 76, 74, 86, 69]
+    },
+    {
+      times: ['08:10', '08:14', '08:17', '08:20', '08:22', '08:35', '08:38', '08:40', '08:47', '08:51', '09:04', '09:07', '09:15', '09:20'],
+      prices: [5.0, 5.1, 5.3, 5.2, 5.0, 4.9, 5.0, 5.2, 5.3, 5.1, 5.0, 5.1, 5.2, 5.1],
+      current: '5.1'
+    },
+    [
+      { id: 1, level: '高温预警', levelColor: 'orange', time: '11:20:00', title: '湘中地区持续高温，辣椒 storage 需注意通风降温。', number: '5001' },
+      { id: 2, level: '暴雨蓝色', levelColor: 'cyan', time: '14:00:00', title: '湖南南部有短时强降雨，采收和运输需抓紧。', number: '5002' },
+      { id: 3, level: '异常数据', levelColor: 'red', time: '16:30:00', title: '长沙辣椒需求量上升，批发商建议提前备货。', number: '5003' },
+    ]
+  ),
+  '四川省': makeProvinceWithCities(
+    '四川省',
+    '青菜',
+    { weather: '阴', temp: '18°/24°', icon: '⛅' },
+    3.8,
+    [
+      { city: '成都市', coord: [104.07, 30.67] },
+      { city: '绵阳市', coord: [104.68, 31.47] },
+      { city: '南充市', coord: [106.11, 30.84] },
+      { city: '乐山市', coord: [103.77, 29.58] },
+      { city: '宜宾市', coord: [104.56, 29.77] },
+    ],
+    [
+      { name: '叶菜类', color: '#00d4ff' },
+      { name: '茄果类', color: '#00ffcc' },
+      { name: '根茎类', color: '#66ff99' },
+      { name: '豆类', color: '#ff66b2' },
+      { name: '菌菇类', color: '#9966ff' },
+      { name: '葱蒜类', color: '#ffcc00' },
+      { name: '瓜菜类', color: '#00ccff' },
+      { name: '特色类', color: '#ff9966' },
+    ],
+    [
+      { name: '成都青菜', color: '#00d4ff', category: '叶菜类' },
+      { name: '绵阳黄瓜', color: '#00a8cc', category: '瓜菜类' },
+      { name: '南充西红柿', color: '#0088aa', category: '茄果类' },
+      { name: '乐山茄子', color: '#00ffcc', category: '茄果类' },
+      { name: '宜宾豆角', color: '#cc00ff', category: '豆类' },
+      { name: '德阳香菇', color: '#ff66b2', category: '菌菇类' },
+      { name: '内江大葱', color: '#66ff99', category: '葱蒜类' },
+      { name: '眉山泡菜', color: '#ffcc00', category: '特色类' },
+      { name: '泸州白萝卜', color: '#00ccff', category: '根茎类' },
+      { name: '自贡生菜', color: '#00ff88', category: '叶菜类' },
+      { name: '攀枝花苦瓜', color: '#ff4444', category: '瓜菜类' },
+      { name: '广元木耳', color: '#00ffaa', category: '菌菇类' },
+    ],
+    {
+      years: ['2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'],
+      avgPrice: [3.8, 3.5, 4.0, 3.9, 3.6, 4.1, 3.4, 4.2, 3.9, 3.7],
+      maxPrice: [4.2, 3.9, 4.4, 4.3, 4.0, 4.5, 3.8, 4.6, 4.3, 4.1]
+    },
+    {
+      total: '48,000',
+      sub: '10,200',
+      indicators: ['产地集散', '批发运输', '仓储监测', '冷链配送', '市场零售'],
+      values: [82, 70, 78, 85, 72]
+    },
+    {
+      times: ['09:10', '09:14', '09:17', '09:20', '09:22', '09:35', '09:38', '09:40', '09:47', '09:51', '10:04', '10:07', '10:15', '10:20'],
+      prices: [3.6, 3.7, 3.8, 3.9, 3.8, 3.7, 3.6, 3.8, 3.9, 3.8, 3.7, 3.8, 3.9, 3.8],
+      current: '3.8'
+    },
+    [
+      { id: 1, level: '暴雨蓝色', levelColor: 'cyan', time: '08:30:00', title: '四川盆地西部有降雨，青菜采收注意避雨。', number: '6001' },
+      { id: 2, level: '高温预警', levelColor: 'orange', time: '13:00:00', title: '成都平原午后气温偏高，注意蔬菜保鲜。', number: '6002' },
+      { id: 3, level: '异常数据', levelColor: 'red', time: '17:00:00', title: '川南地区青菜到货量偏少，价格小幅上涨。', number: '6003' },
+    ]
+  ),
+  '浙江省': makeProvinceWithCities(
+    '浙江省',
+    '茭白',
+    { weather: '晴', temp: '20°/28°', icon: '☀️' },
+    5.0,
+    [
+      { city: '杭州市', coord: [120.16, 30.25] },
+      { city: '宁波市', coord: [121.55, 29.83] },
+      { city: '温州市', coord: [120.65, 28.00] },
+      { city: '嘉兴市', coord: [120.76, 30.75] },
+      { city: '绍兴市', coord: [120.58, 30.00] },
+    ],
+    [
+      { name: '水生类', color: '#00d4ff' },
+      { name: '叶菜类', color: '#00ffcc' },
+      { name: '茄果类', color: '#66ff99' },
+      { name: '菌菇类', color: '#ff66b2' },
+      { name: '根茎类', color: '#9966ff' },
+      { name: '豆类', color: '#ffcc00' },
+      { name: '葱蒜类', color: '#00ccff' },
+      { name: '特色类', color: '#ff9966' },
+    ],
+    [
+      { name: '杭州茭白', color: '#00d4ff', category: '水生类' },
+      { name: '宁波青菜', color: '#00a8cc', category: '叶菜类' },
+      { name: '温州西红柿', color: '#0088aa', category: '茄果类' },
+      { name: '嘉兴香菇', color: '#00ffcc', category: '菌菇类' },
+      { name: '绍兴萝卜', color: '#cc00ff', category: '根茎类' },
+      { name: '湖州黄瓜', color: '#ff66b2', category: '茄果类' },
+      { name: '金华大蒜', color: '#66ff99', category: '葱蒜类' },
+      { name: '舟山海鲜', color: '#ffcc00', category: '特色类' },
+      { name: '台州西兰花', color: '#00ccff', category: '叶菜类' },
+      { name: '衢州豆角', color: '#00ff88', category: '豆类' },
+      { name: '丽水竹笋', color: '#ff4444', category: '特色类' },
+      { name: '义乌生姜', color: '#00ffaa', category: '葱蒜类' },
+    ],
+    {
+      years: ['2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'],
+      avgPrice: [4.8, 4.5, 5.1, 4.9, 4.6, 5.2, 4.4, 5.3, 5.0, 4.7],
+      maxPrice: [5.2, 4.9, 5.5, 5.3, 5.0, 5.6, 4.8, 5.7, 5.4, 5.1]
+    },
+    {
+      total: '44,000',
+      sub: '9,800',
+      indicators: ['产地批发', '网购运输', '销量监测', '物流运输', '产数监测'],
+      values: [76, 72, 80, 84, 71]
+    },
+    {
+      times: ['06:20', '06:24', '06:27', '06:30', '06:32', '06:45', '06:48', '06:50', '06:57', '07:01', '07:14', '07:17', '07:25', '07:30'],
+      prices: [4.8, 4.9, 5.0, 5.1, 5.0, 4.9, 4.8, 5.0, 5.1, 5.0, 4.9, 5.0, 5.1, 5.0],
+      current: '5.0'
+    },
+    [
+      { id: 1, level: '台风预警', levelColor: 'red', time: '07:40:00', title: '浙江沿海受台风外围影响，海上运输可能中断。', number: '7001' },
+      { id: 2, level: '高温预警', levelColor: 'orange', time: '12:10:00', title: '浙北地区连续高温，叶菜类损耗率可能上升。', number: '7002' },
+      { id: 3, level: '暴雨蓝色', levelColor: 'cyan', time: '15:30:00', title: '浙东局部有短时强降雨，批发市场到货可能延后。', number: '7003' },
+    ]
+  ),
+  '江苏省': makeProvinceWithCities(
+    '江苏省',
+    '水芹',
+    { weather: '多云', temp: '19°/27°', icon: '☁️' },
+    4.0,
+    [
+      { city: '南京市', coord: [118.80, 32.06] },
+      { city: '苏州市', coord: [120.62, 31.30] },
+      { city: '无锡市', coord: [120.30, 31.57] },
+      { city: '徐州市', coord: [117.18, 34.27] },
+      { city: '扬州市', coord: [119.42, 32.40] },
+    ],
+    [
+      { name: '水生类', color: '#00d4ff' },
+      { name: '叶菜类', color: '#00ffcc' },
+      { name: '茄果类', color: '#66ff99' },
+      { name: '菌菇类', color: '#ff66b2' },
+      { name: '根茎类', color: '#9966ff' },
+      { name: '豆类', color: '#ffcc00' },
+      { name: '葱蒜类', color: '#00ccff' },
+      { name: '特色类', color: '#ff9966' },
+    ],
+    [
+      { name: '南京水芹', color: '#00d4ff', category: '水生类' },
+      { name: '苏州青菜', color: '#00a8cc', category: '叶菜类' },
+      { name: '无锡西红柿', color: '#0088aa', category: '茄果类' },
+      { name: '徐州萝卜', color: '#00ffcc', category: '根茎类' },
+      { name: '扬州黄瓜', color: '#cc00ff', category: '茄果类' },
+      { name: '南通豆角', color: '#ff66b2', category: '豆类' },
+      { name: '常州香菇', color: '#66ff99', category: '菌菇类' },
+      { name: '淮安大葱', color: '#ffcc00', category: '葱蒜类' },
+      { name: '盐城西兰花', color: '#00ccff', category: '叶菜类' },
+      { name: '泰州生姜', color: '#00ff88', category: '葱蒜类' },
+      { name: '宿迁大蒜', color: '#ff4444', category: '葱蒜类' },
+      { name: '镇江生菜', color: '#00ffaa', category: '叶菜类' },
+    ],
+    {
+      years: ['2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'],
+      avgPrice: [3.9, 3.6, 4.2, 4.0, 3.7, 4.3, 3.5, 4.4, 4.1, 3.8],
+      maxPrice: [4.3, 4.0, 4.6, 4.4, 4.1, 4.7, 3.9, 4.8, 4.5, 4.2]
+    },
+    {
+      total: '53,000',
+      sub: '12,000',
+      indicators: ['产地集散', '批发运输', '仓储监测', '冷链配送', '市场零售'],
+      values: [84, 74, 80, 88, 76]
+    },
+    {
+      times: ['07:50', '07:54', '07:57', '08:00', '08:02', '08:15', '08:18', '08:20', '08:27', '08:31', '08:44', '08:47', '08:55', '09:00'],
+      prices: [3.8, 3.9, 4.0, 4.1, 4.0, 3.9, 3.8, 4.0, 4.1, 4.0, 3.9, 4.0, 4.1, 4.0],
+      current: '4.0'
+    },
+    [
+      { id: 1, level: '大风预警', levelColor: 'orange', time: '08:00:00', title: '江苏沿海有大风，海上蔬菜运输需注意安全。', number: '8001' },
+      { id: 2, level: '暴雨蓝色', levelColor: 'cyan', time: '13:20:00', title: '苏南局部有雷阵雨，水芹采收注意避雨。', number: '8002' },
+      { id: 3, level: '异常数据', levelColor: 'red', time: '16:00:00', title: '南京水芹到货量波动，建议关注价格走势。', number: '8003' },
+    ]
+  )
 };
 
 Object.keys(provinceAdcodeMap).forEach((provinceName) => {

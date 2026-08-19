@@ -57,13 +57,13 @@ function DashboardContent() {
 
       <header className="h-12 flex items-center justify-between relative z-10 px-2 flex-shrink-0 mb-2">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-cyan-500/30 bg-[#0a1a30]/60 data-card">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0a1a30]/60 data-card">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-dot"></span>
             <span className="font-mono text-cyan-300 text-sm tracking-wider">{currentTime}</span>
             <span className="text-gray-400 text-xs">{currentDate}</span>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-cyan-500/30 bg-[#0a1a30]/60 data-card">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0a1a30]/60 data-card">
             <span className="text-base">{todayWeather?.icon || '☁️'}</span>
             <span className="text-cyan-200 text-xs">{data.weather.city}</span>
             <span className="text-cyan-300 text-xs font-medium">{todayWeather?.weather || '多云'}</span>
@@ -82,7 +82,7 @@ function DashboardContent() {
           {headerButtons.map((name, idx) => (
             <button
               key={idx}
-              className="neon-btn px-3 py-1.5 text-[11px] border border-cyan-500/40 text-cyan-300 rounded bg-[#0a1a30]/60 hover:text-cyan-100 transition-colors cursor-pointer"
+              className="neon-btn px-3 py-1.5 text-[11px] text-cyan-300 rounded-lg bg-[#0a1a30]/60 hover:text-cyan-100 hover:bg-cyan-900/40 transition-colors cursor-pointer"
             >
               {name}
             </button>

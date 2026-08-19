@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import type { ECharts, EChartsOption } from 'echarts';
@@ -182,8 +182,16 @@ export default function ChinaMap() {
   }), [provinceData.mapCities]);
 
   const renderMap = useCallback((mapName: string, isChina: boolean) => {
-    if (!chartInstanceRef.current || chartInstanceRef.current.isDisposed()) return;
-    chartInstanceRef.current.setOption(getMapOption(mapName, isChina), true);
+    let instance = chartInstanceRef.current;
+    if (!instance || instance.isDisposed()) {
+      instance = chartRef.current?.getEchartsInstance() || null;
+      if (instance && !instance.isDisposed()) {
+        chartInstanceRef.current = instance;
+      } else {
+        return;
+      }
+    }
+    instance.setOption(getMapOption(mapName, isChina), true);
   }, [getMapOption]);
 
   useEffect(() => {
@@ -226,7 +234,11 @@ export default function ChinaMap() {
 
     if (currentMap === 'province') {
       const cityKeys = Object.keys(provinceData.cities || {});
-      const cityKey = cityKeys.find(k => k === name || k.startsWith(name) || name.startsWith(k.replace(/市$/, '')));
+      const normalized = name.replace(/市$/g, '').replace(/地区$/g, '').replace(/自治州$/g, '');
+      const cityKey = cityKeys.find(k => {
+        const keyNorm = k.replace(/市$/g, '').replace(/地区$/g, '').replace(/自治州$/g, '');
+        return k === name || keyNorm === normalized || normalized.startsWith(keyNorm) || k.startsWith(normalized);
+      });
       if (cityKey) {
         setCurrentCity(cityKey);
       }
@@ -276,18 +288,20 @@ export default function ChinaMap() {
   const mapReadyRef = useRef(mapReady);
   mapReadyRef.current = mapReady;
 
+  // 稳定的事件对象，避免每次渲染重建导致事件解绑
+  const onEvents = useMemo(() => ({
+    click: (params: any) => {
+      console.log('echarts onEvents click', params);
+      handleClickRef.current(params);
+    }
+  }), []);
+
   const onChartReady = useCallback((instance: ECharts) => {
+    console.log('echarts onChartReady', instance.id, 'disposed:', instance.isDisposed());
     chartInstanceRef.current = instance;
     if (typeof window !== 'undefined') {
       (window as any).__chinaMapChart__ = instance;
     }
-
-    // 直接在 ECharts 实例上绑定 click，避免 onEvents 重建导致事件丢失
-    instance.off('click');
-    instance.on('click', (params: any) => {
-      console.log('echarts instance click', params);
-      handleClickRef.current(params);
-    });
 
     if (mapReadyRef.current) {
       renderMapRef.current(currentMapRef.current === 'china' ? 'china' : provinceNameRef.current, currentMapRef.current === 'china');
@@ -303,10 +317,10 @@ export default function ChinaMap() {
 
   const getPercentColor = (percent: string) => {
     const val = parseInt(percent);
-    if (val >= 90) return 'bg-red-500/25 text-red-300 border-red-400/40';
-    if (val >= 80) return 'bg-orange-500/25 text-orange-300 border-orange-400/40';
-    if (val >= 70) return 'bg-yellow-500/25 text-yellow-300 border-yellow-400/40';
-    return 'bg-green-500/25 text-green-300 border-green-400/40';
+    if (val >= 90) return 'bg-red-500/20 text-red-300';
+    if (val >= 80) return 'bg-orange-500/20 text-orange-300';
+    if (val >= 70) return 'bg-yellow-500/20 text-yellow-300';
+    return 'bg-green-500/20 text-green-300';
   };
 
   const getPercentBar = (percent: string) => {
@@ -319,7 +333,11 @@ export default function ChinaMap() {
         {/* 主标题 */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none">
           <h2 className="dashboard-title text-2xl font-bold tracking-[0.25em] glow-text">
-            {currentMap === 'china' ? '价溯云图 TEST' : displayArea}
+            {currentMap === 'china'
+              ? '价溯云图'
+              : currentCity
+                ? `${currentProvince} · ${currentCity}`
+                : currentProvince}
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <div className="w-12 h-px bg-gradient-to-r from-transparent to-cyan-400/50"></div>
@@ -332,7 +350,7 @@ export default function ChinaMap() {
         {currentMap === 'province' && (
           <button
             onClick={handleBack}
-            className="absolute top-2 left-3 z-30 px-3 py-1.5 text-xs border border-cyan-400/50 text-cyan-200 rounded bg-[#0a1a30]/90 hover:bg-cyan-900/50 transition-all cursor-pointer flex items-center gap-1 neon-btn"
+            className="absolute top-2 left-3 z-30 px-3 py-1.5 text-xs text-cyan-200 rounded-lg bg-[#0a1a30]/80 hover:bg-cyan-900/50 transition-all cursor-pointer flex items-center gap-1 neon-btn"
           >
             <span>←</span>
             <span>返回全国</span>
@@ -340,14 +358,14 @@ export default function ChinaMap() {
         )}
 
         {/* 当前区域指示 */}
-        <div className="absolute top-2 right-3 z-20 px-3 py-1 rounded-full border border-cyan-500/30 bg-[#0a1a30]/70 flex items-center gap-2 data-card pointer-events-none">
+        <div className="absolute top-2 right-3 z-20 px-3 py-1 rounded-full bg-[#0a1a30]/70 flex items-center gap-2 data-card pointer-events-none">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-dot"></span>
           <span className="text-cyan-200 text-xs">当前区域</span>
           <span className="text-cyan-100 text-xs font-bold">{displayArea}</span>
         </div>
 
         {/* 天气卡片 */}
-        <div className="absolute top-14 left-3 w-44 data-card rounded-lg p-3 z-20 corner-deco pointer-events-none">
+        <div className="absolute top-14 left-3 w-44 data-card rounded-lg p-3 z-20 pointer-events-none">
           <div className="flex items-center justify-between mb-2">
             <div>
               <h4 className="text-cyan-300 text-sm font-bold">{weather.city}</h4>
@@ -370,7 +388,7 @@ export default function ChinaMap() {
         {/* 右侧信息面板 */}
         <div className="absolute top-14 right-3 w-40 z-20 space-y-2 pointer-events-none">
           {/* 蔬菜均价 */}
-          <div className="data-card rounded-lg p-3 corner-deco">
+          <div className="data-card rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-xs">¥</span>
               <div>
@@ -378,7 +396,7 @@ export default function ChinaMap() {
                 <p className="text-[10px] text-gray-400">实时监测中</p>
               </div>
             </div>
-            <div className="w-full bg-[#0a1a30] text-cyan-200 text-xs border border-cyan-500/40 rounded px-2 py-1.5 text-center font-medium">
+            <div className="w-full bg-[#0a1a30] text-cyan-200 text-xs rounded px-2 py-1.5 text-center font-medium">
               {vegetablePrice.vegetable}
             </div>
           </div>
@@ -430,6 +448,7 @@ export default function ChinaMap() {
             opts={{ renderer: 'canvas' }}
             className="w-full h-full"
             onChartReady={onChartReady}
+            onEvents={onEvents}
           />
         </div>
 

@@ -9,31 +9,22 @@ interface PanelProps {
 }
 
 export default function Panel({ title, children, className = '', delay = 0, icon }: PanelProps) {
-  const cornerClass = "absolute w-3 h-3 border-cyan-400/70";
-
   return (
     <div
-      className={`relative h-full rounded-sm bg-[#08101e]/85 border border-cyan-500/20 overflow-hidden panel-animate group ${className}`}
+      className={`relative h-full rounded-lg bg-[#08101e]/75 overflow-hidden panel-animate group ${className}`}
       style={{
-        boxShadow: '0 0 25px rgba(0, 200, 255, 0.08), inset 0 0 40px rgba(0, 100, 150, 0.06)',
+        boxShadow: '0 4px 30px rgba(0, 60, 100, 0.25), inset 0 0 60px rgba(0, 100, 150, 0.04)',
         animationDelay: `${delay}ms`
       }}
     >
-      {/* 四角装饰 */}
-      <div className={`${cornerClass} top-0 left-0 border-l-[1.5px] border-t-[1.5px]`}></div>
-      <div className={`${cornerClass} top-0 right-0 border-r-[1.5px] border-t-[1.5px]`}></div>
-      <div className={`${cornerClass} bottom-0 left-0 border-l-[1.5px] border-b-[1.5px]`}></div>
-      <div className={`${cornerClass} bottom-0 right-0 border-r-[1.5px] border-b-[1.5px]`}></div>
-
       {/* 背景渐变 */}
-      <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/[0.04] via-transparent to-cyan-500/[0.04] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/[0.03] via-transparent to-cyan-500/[0.03] pointer-events-none"></div>
 
       {/* 顶部扫描线 */}
-      <div className="scan-line opacity-30 pointer-events-none"></div>
+      <div className="scan-line opacity-20 pointer-events-none"></div>
 
-      {/* 顶部/底部发光线条 */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"></div>
+      {/* 顶部微光线条 */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"></div>
 
       {/* 悬浮闪光层 */}
       <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0"></div>

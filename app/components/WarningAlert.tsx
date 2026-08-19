@@ -7,24 +7,24 @@ import { useDashboard } from '../context/DashboardContext';
 const colorMap: Record<string, { bg: string; border: string; text: string; icon: string; glow: string }> = {
   red: {
     bg: 'bg-red-500/10',
-    border: 'border-red-500/50',
+    border: 'border-red-500/30',
     text: 'text-red-400',
     icon: '🔥',
-    glow: 'shadow-[0_0_14px_rgba(255,80,80,0.25)]'
+    glow: 'shadow-[0_0_14px_rgba(255,80,80,0.15)]'
   },
   cyan: {
     bg: 'bg-cyan-500/10',
-    border: 'border-cyan-500/50',
+    border: 'border-cyan-500/30',
     text: 'text-cyan-400',
     icon: '🌧️',
-    glow: 'shadow-[0_0_14px_rgba(0,200,255,0.25)]'
+    glow: 'shadow-[0_0_14px_rgba(0,200,255,0.15)]'
   },
   orange: {
     bg: 'bg-orange-500/10',
-    border: 'border-orange-500/50',
+    border: 'border-orange-500/30',
     text: 'text-orange-400',
     icon: '⚠️',
-    glow: 'shadow-[0_0_14px_rgba(255,160,50,0.25)]'
+    glow: 'shadow-[0_0_14px_rgba(255,160,50,0.15)]'
   }
 };
 

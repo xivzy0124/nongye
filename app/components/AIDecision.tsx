@@ -52,7 +52,7 @@ export default function AIDecision() {
   return (
     <Panel title="AI 智能决策分析" icon="🤖">
       <div className="h-full flex flex-col px-2 py-1 overflow-hidden">
-        <div className="flex items-center justify-between mb-2 px-1 py-1 rounded bg-cyan-500/5 border border-cyan-500/20">
+        <div className="flex items-center justify-between mb-2 px-2 py-1.5 rounded-lg bg-cyan-500/5">
           <span className="text-[10px] text-cyan-400/80">当前区域</span>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-dot"></span>
@@ -63,7 +63,7 @@ export default function AIDecision() {
         {/* 核心指标 */}
         <div className="grid grid-cols-2 gap-2 mb-2">
           {metrics.map((m) => (
-            <div key={m.label} className={`${m.bg} border ${m.border} rounded p-1.5 flex flex-col items-center justify-center relative overflow-hidden group`}>
+            <div key={m.label} className={`${m.bg} rounded-lg p-1.5 flex flex-col items-center justify-center relative overflow-hidden group`}>
               <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <span className={`text-sm font-bold ${m.color} number-roll`}>{m.value}</span>
               <span className="text-[10px] text-cyan-200/80">{m.label}</span>
@@ -146,7 +146,7 @@ export default function AIDecision() {
         <div className="flex justify-center mt-auto pt-1">
           <button
             onClick={() => router.push(`/decision-report?region=${encodeURIComponent(displayArea)}`)}
-            className="neon-btn px-6 py-1 bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border border-cyan-400/50 rounded-full text-cyan-200 text-xs hover:text-white transition-colors cursor-pointer relative overflow-hidden"
+            className="neon-btn px-6 py-1 bg-gradient-to-r from-cyan-600/30 to-blue-600/30 rounded-full text-cyan-200 text-xs hover:text-white transition-colors cursor-pointer relative overflow-hidden"
             style={{ boxShadow: '0 0 15px rgba(0, 200, 255, 0.2)' }}
           >
             <span className="relative z-10">查看决策报告</span>

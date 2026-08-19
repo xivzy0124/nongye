@@ -9,7 +9,7 @@ const ReportContent = dynamic(() => import('../components/report/ReportContent')
 export default function DecisionReportPage() {
   return (
     <div
-      className="h-screen w-full overflow-y-auto overflow-x-hidden relative"
+      className="h-screen w-full overflow-hidden relative"
       style={{ background: '#050a15' }}
     >
       <div className="tech-grid fixed inset-0"></div>

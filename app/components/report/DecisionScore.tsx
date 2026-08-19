@@ -50,7 +50,7 @@ export default function DecisionScore({ score }: { score: number }) {
         title: { show: false },
         detail: {
           valueAnimation: true,
-          fontSize: 28,
+          fontSize: 22,
           fontWeight: 'bold',
           color: '#00ffff',
           offsetCenter: [0, '30%'],

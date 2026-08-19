@@ -280,36 +280,13 @@ body {
 
 /* 数据卡片 */
 .data-card {
-  background: rgba(10, 26, 48, 0.7);
-  border: 1px solid rgba(0, 200, 255, 0.25);
-  backdrop-filter: blur(8px);
+  background: rgba(10, 26, 48, 0.65);
+  backdrop-filter: blur(10px);
   transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 40, 80, 0.25);
 }
 
 .data-card:hover {
-  border-color: rgba(0, 255, 255, 0.5);
-  box-shadow: 0 0 20px rgba(0, 200, 255, 0.2);
-}
-
-/* 角标装饰 */
-.corner-deco::before,
-.corner-deco::after {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-color: rgba(0, 255, 255, 0.6);
-  border-style: solid;
-}
-
-.corner-deco::before {
-  top: 0;
-  left: 0;
-  border-width: 2px 0 0 2px;
-}
-
-.corner-deco::after {
-  bottom: 0;
-  right: 0;
-  border-width: 0 2px 2px 0;
+  background: rgba(14, 36, 66, 0.75);
+  box-shadow: 0 0 24px rgba(0, 200, 255, 0.15);
 }

@@ -25,17 +25,17 @@ export default function ReportContent() {
   const report = useMemo(() => generateReportData(region), [region, refresh]);
 
   return (
-    <div className="relative z-10 max-w-[1600px] mx-auto p-4 lg:p-6">
+    <div className="relative z-10 h-full max-w-[1600px] mx-auto p-3 flex flex-col">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
+      <header className="flex-none flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center gap-2">
           <Link
             href="/"
-            className="group flex items-center justify-center w-10 h-10 rounded-xl border border-cyan-400/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:text-white hover:border-cyan-300/60 hover:shadow-[0_0_20px_rgba(0,200,255,0.35)] transition-all duration-300"
+            className="group flex items-center justify-center w-8 h-8 rounded-lg border border-cyan-400/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:text-white hover:border-cyan-300/60 hover:shadow-[0_0_16px_rgba(0,200,255,0.35)] transition-all duration-300"
           >
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -49,21 +49,21 @@ export default function ReportContent() {
             </svg>
           </Link>
           <div>
-            <h1 className="dashboard-title text-xl lg:text-2xl font-bold tracking-wider">AI 决策分析报告</h1>
-            <p className="text-cyan-400/60 text-xs mt-0.5">
+            <h1 className="dashboard-title text-base lg:text-lg font-bold tracking-wider">AI 决策分析报告</h1>
+            <p className="text-cyan-400/60 text-[10px]">
               区域：<span className="text-cyan-300 font-medium">{region}</span> · 生成时间：{currentTime}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.06] p-1.5 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(0,255,255,0.08),0_4px_20px_rgba(0,0,0,0.25)]">
+        <div className="flex items-center gap-1.5 rounded-lg border border-cyan-500/20 bg-cyan-500/[0.06] p-1 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(0,255,255,0.08),0_4px_20px_rgba(0,0,0,0.25)]">
           <button
             onClick={() => setRefresh(r => r + 1)}
-            className="neon-btn flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-cyan-400/30 bg-gradient-to-r from-cyan-600/20 to-blue-600/20 text-cyan-200 hover:text-white hover:border-cyan-300/60 hover:shadow-[0_0_18px_rgba(0,200,255,0.35)] transition-all duration-300"
+            className="neon-btn flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium rounded-md border border-cyan-400/30 bg-gradient-to-r from-cyan-600/20 to-blue-600/20 text-cyan-200 hover:text-white hover:border-cyan-300/60 hover:shadow-[0_0_14px_rgba(0,200,255,0.35)] transition-all duration-300"
           >
             <svg
-              width="14"
-              height="14"
+              width="12"
+              height="12"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -76,10 +76,10 @@ export default function ReportContent() {
             </svg>
             刷新数据
           </button>
-          <button className="neon-btn flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-cyan-400/30 bg-gradient-to-r from-green-600/20 to-cyan-600/20 text-cyan-200 hover:text-white hover:border-cyan-300/60 hover:shadow-[0_0_18px_rgba(0,255,200,0.35)] transition-all duration-300">
+          <button className="neon-btn flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium rounded-md border border-cyan-400/30 bg-gradient-to-r from-green-600/20 to-cyan-600/20 text-cyan-200 hover:text-white hover:border-cyan-300/60 hover:shadow-[0_0_14px_rgba(0,255,200,0.35)] transition-all duration-300">
             <svg
-              width="14"
-              height="14"
+              width="12"
+              height="12"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -96,46 +96,49 @@ export default function ReportContent() {
         </div>
       </header>
 
-      {/* KPI Cards */}
-      <section className="mb-5">
-        <KPICards kpis={report.kpis} />
-      </section>
+      {/* Main content grid */}
+      <div className="flex-1 min-h-0 flex flex-col gap-2">
+        {/* KPI Cards */}
+        <section className="flex-none">
+          <KPICards kpis={report.kpis} />
+        </section>
 
-      {/* Score + Trend */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-5">
-        <div className="lg:col-span-3 h-72 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-4 panel-animate"
-          style={{ boxShadow: '0 0 25px rgba(0, 200, 255, 0.08)' }}>
-          <DecisionScore score={report.decisionScore} />
-        </div>
-        <div className="lg:col-span-9 h-72 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-4 panel-animate"
-          style={{ animationDelay: '100ms', boxShadow: '0 0 25px rgba(0, 200, 255, 0.08)' }}>
-          <TrendChart data={report.trend} />
-        </div>
-      </section>
+        {/* Score + Trend */}
+        <section className="flex-[1.1] min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2">
+          <div className="lg:col-span-3 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+            style={{ boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
+            <DecisionScore score={report.decisionScore} />
+          </div>
+          <div className="lg:col-span-9 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+            style={{ animationDelay: '100ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
+            <TrendChart data={report.trend} />
+          </div>
+        </section>
 
-      {/* Risk Radar + Factors */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-        <div className="h-80 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-4 panel-animate"
-          style={{ animationDelay: '200ms', boxShadow: '0 0 25px rgba(0, 200, 255, 0.08)' }}>
-          <RiskRadar indicators={report.riskRadar.indicators} values={report.riskRadar.values} />
-        </div>
-        <div className="h-80 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-4 panel-animate"
-          style={{ animationDelay: '300ms', boxShadow: '0 0 25px rgba(0, 200, 255, 0.08)' }}>
-          <FactorChart names={report.factors.names} values={report.factors.values} impacts={report.factors.impacts} />
-        </div>
-      </section>
+        {/* Risk Radar + Factors */}
+        <section className="flex-[1.1] min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-2">
+          <div className="rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+            style={{ animationDelay: '200ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
+            <RiskRadar indicators={report.riskRadar.indicators} values={report.riskRadar.values} />
+          </div>
+          <div className="rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+            style={{ animationDelay: '300ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
+            <FactorChart names={report.factors.names} values={report.factors.values} impacts={report.factors.impacts} />
+          </div>
+        </section>
 
-      {/* Table + Timeline */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 pb-6">
-        <div className="lg:col-span-7 h-96 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-4 panel-animate"
-          style={{ animationDelay: '400ms', boxShadow: '0 0 25px rgba(0, 200, 255, 0.08)' }}>
-          <RecommendationsTable recommendations={report.recommendations} />
-        </div>
-        <div className="lg:col-span-5 h-96 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-4 panel-animate"
-          style={{ animationDelay: '500ms', boxShadow: '0 0 25px rgba(0, 200, 255, 0.08)' }}>
-          <AlertTimeline alerts={report.alerts} />
-        </div>
-      </section>
+        {/* Table + Timeline */}
+        <section className="flex-[1.4] min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2">
+          <div className="lg:col-span-7 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+            style={{ animationDelay: '400ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
+            <RecommendationsTable recommendations={report.recommendations} />
+          </div>
+          <div className="lg:col-span-5 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+            style={{ animationDelay: '500ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
+            <AlertTimeline alerts={report.alerts} />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
