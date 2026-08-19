@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { DashboardProvider, useDashboard } from '../context/DashboardContext';
 import FlowAnalysis from './FlowAnalysis';
 import PriceTrend from './PriceTrend';
@@ -28,7 +30,15 @@ function DashboardContent() {
     return () => clearInterval(timer);
   }, []);
 
-  const headerButtons = ['数据查询', '风险预警', '价格预测', '辅助决策'];
+  const pathname = usePathname();
+
+  const headerButtons = [
+    { label: '数据查询', href: '/data-query', icon: '🔍', color: '#00f2ff', desc: '多维度检索' },
+    { label: '数据治理', href: '/data-governance', icon: '⚙️', color: '#6c8cff', desc: '清洗融合' },
+    { label: '风险预警', href: '/risk-warning', icon: '⚠️', color: '#fb7185', desc: '实时告警' },
+    { label: '价格预测', href: '/price-prediction', icon: '📈', color: '#34d399', desc: 'AI 预测' },
+    { label: '辅助决策', href: '/decision-report?region=河南省', icon: '🎯', color: '#fbbf24', desc: '智能决策' },
+  ];
 
   return (
     <div className="w-screen h-screen overflow-hidden relative p-3 flex flex-col"
@@ -78,16 +88,24 @@ function DashboardContent() {
           <p className="text-[10px] text-cyan-400/60 tracking-[0.3em] mt-0.5">农产品价格预测大模型 · 数据查询 · 风险预警 · 价格预测 · 辅助决策</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {headerButtons.map((name, idx) => (
-            <button
-              key={idx}
-              className="neon-btn px-3 py-1.5 text-[11px] text-cyan-300 rounded-lg bg-[#0a1a30]/60 hover:text-cyan-100 hover:bg-cyan-900/40 transition-colors cursor-pointer"
-            >
-              {name}
-            </button>
-          ))}
-        </div>
+        <nav className="nav-menu">
+          {headerButtons.map((item, idx) => {
+            const isActive = pathname === item.href.split('?')[0];
+            return (
+              <Link
+                key={idx}
+                href={item.href}
+                className={`nav-item${isActive ? ' active' : ''}`}
+                style={{ '--ni-color': item.color } as React.CSSProperties}
+                title={item.desc}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span className="nav-label">{item.label}</span>
+                <span className="nav-glow" />
+              </Link>
+            );
+          })}
+        </nav>
       </header>
 
       <main className="flex-1 min-h-0 grid grid-cols-12 gap-3 relative z-10">

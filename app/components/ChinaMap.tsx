@@ -1,18 +1,34 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import type { ECharts, EChartsOption } from 'echarts';
 import Panel from './Panel';
 import { getProvinceAdcode } from './chinaAdcodeMap';
 import { useDashboard } from '../context/DashboardContext';
-import { provinceList, defaultProvince, mockData } from '../data/mockData';
+import { provinceList, defaultProvince } from '../data/mockData';
+import WeatherMonitor from './WeatherMonitor';
 
-console.log('ChinaMap module loaded v2');
+const mapColors = ['#025a48', '#029a85', '#0af3c2', '#08e795'];
+
+function hexToRgba(hex: string, opacity: number) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${opacity})`;
+}
+
+function getValueColor(value: number) {
+  if (value >= 7.5) return mapColors[3];
+  if (value >= 5) return mapColors[2];
+  if (value >= 2.5) return mapColors[1];
+  return mapColors[0];
+}
 
 export default function ChinaMap() {
-  console.log('ChinaMap render');
   const { data, provinceData, currentProvince, currentCity, setCurrentCity, setCurrentProvince } = useDashboard();
   const chartRef = useRef<ReactECharts>(null);
   const chartInstanceRef = useRef<ECharts | null>(null);
@@ -20,168 +36,116 @@ export default function ChinaMap() {
   const [provinceName, setProvinceName] = useState('');
   const [loading, setLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
+  const [animateClass, setAnimateClass] = useState('');
 
   const { weather, vegetablePrice } = data;
   const displayArea = currentCity || currentProvince;
 
-  const getMapOption = useCallback((mapName: string, isChina: boolean): EChartsOption => ({
-    backgroundColor: 'transparent',
-    geo: isChina ? undefined : {
-      map: mapName,
-      roam: true,
-      zoom: 1.05,
-      center: undefined,
-      label: {
-        show: true,
-        color: '#e0f7ff',
-        fontSize: 10,
-        textBorderColor: '#001020',
-        textBorderWidth: 2
-      },
-      itemStyle: {
-        areaColor: {
-          type: 'radial',
-          x: 0.5, y: 0.5, r: 0.8,
-          colorStops: [
-            { offset: 0, color: 'rgba(0, 180, 220, 0.35)' },
-            { offset: 0.6, color: 'rgba(0, 100, 160, 0.2)' },
-            { offset: 1, color: 'rgba(0, 50, 100, 0.1)' }
-          ]
-        },
-        borderColor: '#00eaff',
-        borderWidth: 1,
-        shadowColor: 'rgba(0, 230, 255, 0.35)',
-        shadowBlur: 12
-      },
-      emphasis: {
-        label: { color: '#00ffff', fontSize: 12, fontWeight: 'bold' },
+  const [selectedProduct, setSelectedProduct] = useState(vegetablePrice.vegetable);
+  const productOptions = vegetablePrice.options?.length ? vegetablePrice.options : [vegetablePrice.vegetable, '黄瓜', '西红柿'];
+
+  const provincePriceRanking = useMemo(() => {
+    const base = 3.5 + (selectedProduct.charCodeAt(0) % 50) / 20 + (displayArea.length % 3);
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i + 1);
+      const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+      const price = Math.max(1, base + Math.sin(i + selectedProduct.length) * 1.2 + (Math.random() - 0.5) * 0.6).toFixed(1);
+      const probability = Math.min(98, Math.max(65, 70 + Math.cos(i + selectedProduct.length) * 12 + (Math.random() - 0.5) * 8)).toFixed(0);
+      return { day: dateStr, price, probability };
+    });
+  }, [selectedProduct, displayArea, currentProvince, currentCity]);
+
+  const generateMapData = useCallback((features: any[]) => {
+    return features.map((feature: any) => {
+      const name = feature.properties.name;
+      const value = currentMap === 'china'
+        ? (data.priceTrend?.avgPrice?.slice(-1)[0] ?? Math.random() * 10)
+        : (provinceData.cities?.[name]?.priceTrend?.avgPrice?.slice(-1)[0] ?? Math.random() * 10);
+      const baseColor = getValueColor(value);
+      return {
+        name,
+        value,
         itemStyle: {
-          areaColor: {
-            type: 'radial',
-            x: 0.5, y: 0.5, r: 0.8,
-            colorStops: [
-              { offset: 0, color: 'rgba(0, 230, 255, 0.55)' },
-              { offset: 1, color: 'rgba(0, 150, 200, 0.3)' }
-            ]
-          },
-          borderColor: '#00ffff',
-          borderWidth: 2,
-          shadowColor: 'rgba(0, 255, 255, 0.6)',
-          shadowBlur: 16
+          areaColor: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: hexToRgba(baseColor, 0.25) },
+            { offset: 1, color: hexToRgba(baseColor, 0.05) }
+          ])
+        }
+      };
+    });
+  }, [currentMap, data, provinceData]);
+
+  const getMapOption = useCallback((mapName: string, isChina: boolean, features?: any[]): EChartsOption => {
+    const dataWithGradient = features ? generateMapData(features) : [];
+
+    return {
+      backgroundColor: 'transparent',
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: 'rgba(0, 70, 90, 0.9)',
+        borderColor: '#60EFDB',
+        borderWidth: 1,
+        textStyle: { color: '#fff', fontSize: 12 },
+        formatter: (params: any) => {
+          if (isNaN(params.value)) return params.name;
+          return `${params.name}<br/>热度值: <span style="color:#08e7de;font-weight:bold;text-shadow:0 0 5px #08e7de;">${Number(params.value).toFixed(1)}</span>`;
         }
       },
-      zlevel: 1
-    },
-    series: isChina ? [
-      {
-        type: 'map',
+      visualMap: {
+        show: false,
+        min: 0,
+        max: 10,
+        inRange: { color: mapColors }
+      },
+      geo: {
+        show: false,
         map: mapName,
         roam: true,
-        zoom: 1.2,
-        label: {
-          show: true,
-          color: '#e0f7ff',
-          fontSize: 10,
-          textBorderColor: '#001020',
-          textBorderWidth: 2
-        },
-        itemStyle: {
-          areaColor: {
-            type: 'radial',
-            x: 0.5, y: 0.5, r: 0.8,
-            colorStops: [
-              { offset: 0, color: 'rgba(0, 180, 220, 0.35)' },
-              { offset: 0.6, color: 'rgba(0, 100, 160, 0.2)' },
-              { offset: 1, color: 'rgba(0, 50, 100, 0.1)' }
-            ]
+        zoom: isChina ? 1.2 : 1.05
+      },
+      series: [
+        {
+          type: 'map',
+          map: mapName,
+          roam: true,
+          zoom: isChina ? 1.2 : 1.05,
+          label: {
+            show: true,
+            color: '#e0f7ff',
+            fontSize: 10,
+            textBorderColor: '#001020',
+            textBorderWidth: 2
           },
-          borderColor: '#00eaff',
-          borderWidth: 1,
-          shadowColor: 'rgba(0, 230, 255, 0.35)',
-          shadowBlur: 12
-        },
-        emphasis: {
-          label: { color: '#00ffff', fontSize: 12, fontWeight: 'bold' },
           itemStyle: {
-            areaColor: {
-              type: 'radial',
-              x: 0.5, y: 0.5, r: 0.8,
-              colorStops: [
-                { offset: 0, color: 'rgba(0, 230, 255, 0.55)' },
-                { offset: 1, color: 'rgba(0, 150, 200, 0.3)' }
-              ]
-            },
-            borderColor: '#00ffff',
-            borderWidth: 2,
-            shadowColor: 'rgba(0, 255, 255, 0.6)',
-            shadowBlur: 16
-          }
-        },
-        select: {
-          label: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
-          itemStyle: {
-            areaColor: {
-              type: 'radial',
-              x: 0.5, y: 0.5, r: 0.8,
-              colorStops: [
-                { offset: 0, color: 'rgba(0, 255, 220, 0.65)' },
-                { offset: 1, color: 'rgba(0, 180, 200, 0.35)' }
-              ]
-            },
-            borderColor: '#00ffcc',
-            borderWidth: 2,
-            shadowColor: 'rgba(0, 255, 200, 0.6)',
-            shadowBlur: 18
-          }
-        },
-        data: provinceList.map(name => ({ name, selected: false, value: mockData[name]?.priceLevel ?? 0 })),
-        zlevel: 2
-      }
-    ] : [
-      {
-        type: 'effectScatter',
-        coordinateSystem: 'geo',
-        data: provinceData.mapCities || [],
-        symbolSize: (val: any) => Math.max(6, Math.min(18, (val?.[2] || 0) * 1.8)),
-        showEffectOn: 'render',
-        rippleEffect: {
-          brushType: 'stroke',
-          scale: 2.5,
-          period: 4
-        },
-        label: {
-          show: true,
-          formatter: (params: any) => {
-            const name = params.name || '';
-            return name.replace(/市$/, '');
+            areaColor: 'rgba(0, 70, 90, 0.2)',
+            borderColor: '#60EFDB',
+            borderWidth: 1.5,
+            shadowColor: '#0abff3',
+            shadowBlur: 15,
+            shadowOffsetY: 5
           },
-          position: 'right',
-          color: '#00ffff',
-          fontSize: 10,
-          fontWeight: 'bold',
-          textBorderColor: '#001020',
-          textBorderWidth: 2
-        },
-        itemStyle: {
-          color: '#00ffff',
-          shadowBlur: 10,
-          shadowColor: 'rgba(0, 255, 255, 0.6)'
-        },
-        emphasis: {
-          scale: true,
-          label: { color: '#ffffff', fontSize: 12 },
-          itemStyle: {
-            color: '#ffcc00',
-            shadowBlur: 20,
-            shadowColor: 'rgba(255, 200, 0, 0.8)'
-          }
-        },
-        zlevel: 3
-      }
-    ]
-  }), [provinceData.mapCities]);
+          emphasis: {
+            label: { show: true, color: '#fff', fontSize: 12, fontWeight: 'bold' },
+            itemStyle: {
+              areaColor: '#BEF2E5',
+              borderColor: '#fff',
+              borderWidth: 2,
+              shadowBlur: 30,
+              shadowColor: '#08e7de'
+            }
+          },
+          select: {
+            itemStyle: { areaColor: '#0abff3' }
+          },
+          data: dataWithGradient
+        }
+      ]
+    };
+  }, [generateMapData]);
 
-  const renderMap = useCallback((mapName: string, isChina: boolean) => {
+  const renderMap = useCallback((mapName: string, isChina: boolean, features?: any[]) => {
     let instance = chartInstanceRef.current;
     if (!instance || instance.isDisposed()) {
       instance = chartRef.current?.getEchartsInstance() || null;
@@ -191,7 +155,7 @@ export default function ChinaMap() {
         return;
       }
     }
-    instance.setOption(getMapOption(mapName, isChina), true);
+    instance.setOption(getMapOption(mapName, isChina, features), true);
   }, [getMapOption]);
 
   useEffect(() => {
@@ -214,22 +178,24 @@ export default function ChinaMap() {
 
   useEffect(() => {
     if (mapReady && chartInstanceRef.current) {
-      renderMap('china', true);
+      const chinaJson = echarts.getMap('china')?.geoJson;
+      renderMap('china', true, chinaJson?.features);
     }
   }, [mapReady, renderMap]);
 
   useEffect(() => {
     if (!chartInstanceRef.current || chartInstanceRef.current.isDisposed() || !mapReady) return;
     if (currentMap === 'china') {
-      renderMap('china', true);
+      const chinaJson = echarts.getMap('china')?.geoJson;
+      renderMap('china', true, chinaJson?.features);
     } else if (currentMap === 'province' && provinceName) {
-      renderMap(provinceName, false);
+      const provinceJson = echarts.getMap(provinceName)?.geoJson;
+      renderMap(provinceName, false, provinceJson?.features);
     }
   }, [currentProvince, currentMap, provinceName, provinceData, mapReady, renderMap]);
 
   const handleClick = useCallback(async (params: any) => {
     const name = params.name || params.data?.name;
-    console.log('map click', params.componentType, params.seriesType, name, 'currentMap', currentMap);
     if (!name) return;
 
     if (currentMap === 'province') {
@@ -248,23 +214,21 @@ export default function ChinaMap() {
     if (!provinceList.includes(name)) return;
 
     const adcode = getProvinceAdcode(name);
-    console.log('province click', name, adcode);
     if (!adcode || !chartInstanceRef.current) return;
 
     try {
       setLoading(true);
       const url = `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`;
-      console.log('fetching', url);
       const response = await fetch(url);
-      console.log('fetch response', response.status);
       if (!response.ok) throw new Error('Network response was not ok');
       const provinceJson = await response.json();
-      console.log('register map', name);
       echarts.registerMap(name, provinceJson);
 
       setProvinceName(name);
       setCurrentProvince(name);
       setCurrentMap('province');
+      setAnimateClass('map-drill-enter');
+      setTimeout(() => setAnimateClass(''), 800);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load province map:', error);
@@ -272,7 +236,6 @@ export default function ChinaMap() {
     }
   }, [currentMap, provinceData.cities, setCurrentCity, setCurrentProvince]);
 
-  // 使用 ref 保持回调稳定，避免每次渲染重新初始化 ECharts 实例
   const handleClickRef = useRef(handleClick);
   handleClickRef.current = handleClick;
 
@@ -288,23 +251,22 @@ export default function ChinaMap() {
   const mapReadyRef = useRef(mapReady);
   mapReadyRef.current = mapReady;
 
-  // 稳定的事件对象，避免每次渲染重建导致事件解绑
   const onEvents = useMemo(() => ({
     click: (params: any) => {
-      console.log('echarts onEvents click', params);
       handleClickRef.current(params);
     }
   }), []);
 
   const onChartReady = useCallback((instance: ECharts) => {
-    console.log('echarts onChartReady', instance.id, 'disposed:', instance.isDisposed());
     chartInstanceRef.current = instance;
     if (typeof window !== 'undefined') {
       (window as any).__chinaMapChart__ = instance;
     }
-
     if (mapReadyRef.current) {
-      renderMapRef.current(currentMapRef.current === 'china' ? 'china' : provinceNameRef.current, currentMapRef.current === 'china');
+      const map = currentMapRef.current === 'china' ? 'china' : provinceNameRef.current;
+      const isChina = currentMapRef.current === 'china';
+      const json = echarts.getMap(map)?.geoJson;
+      renderMapRef.current(map, isChina, json?.features);
     }
   }, []);
 
@@ -313,6 +275,8 @@ export default function ChinaMap() {
     setProvinceName('');
     setCurrentCity('');
     setCurrentProvince(defaultProvince);
+    setAnimateClass('map-back-enter');
+    setTimeout(() => setAnimateClass(''), 800);
   }, [setCurrentCity, setCurrentProvince]);
 
   const getPercentColor = (percent: string) => {
@@ -323,13 +287,21 @@ export default function ChinaMap() {
     return 'bg-green-500/20 text-green-300';
   };
 
-  const getPercentBar = (percent: string) => {
-    return Math.min(100, Math.max(20, parseInt(percent)));
-  };
+  const getPercentBar = (percent: string) => Math.min(100, Math.max(20, parseInt(percent)));
 
   return (
     <Panel title="">
       <div className="h-full w-full relative overflow-hidden">
+        {/* 装饰层 */}
+        <div className="map-decor-grid"></div>
+        <div className="map-radar-ring ring-1"></div>
+        <div className="map-radar-ring ring-2"></div>
+        <div className="map-scan-light"></div>
+        <div className="map-corner top-left"></div>
+        <div className="map-corner top-right"></div>
+        <div className="map-corner bottom-left"></div>
+        <div className="map-corner bottom-right"></div>
+
         {/* 主标题 */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none">
           <h2 className="dashboard-title text-2xl font-bold tracking-[0.25em] glow-text">
@@ -341,7 +313,9 @@ export default function ChinaMap() {
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <div className="w-12 h-px bg-gradient-to-r from-transparent to-cyan-400/50"></div>
-            <span className="text-[10px] text-cyan-400/60 tracking-widest">{currentMap === 'china' ? '全国农产品价格监测' : (currentCity ? '市级农产品价格监测' : '省级农产品价格监测')}</span>
+            <span className="text-[10px] text-cyan-400/60 tracking-widest">
+              {currentMap === 'china' ? '全国农产品价格监测' : (currentCity ? '市级农产品价格监测' : '省级农产品价格监测')}
+            </span>
             <div className="w-12 h-px bg-gradient-to-l from-transparent to-cyan-400/50"></div>
           </div>
         </div>
@@ -350,10 +324,10 @@ export default function ChinaMap() {
         {currentMap === 'province' && (
           <button
             onClick={handleBack}
-            className="absolute top-2 left-3 z-30 px-3 py-1.5 text-xs text-cyan-200 rounded-lg bg-[#0a1a30]/80 hover:bg-cyan-900/50 transition-all cursor-pointer flex items-center gap-1 neon-btn"
+            className="absolute top-2 left-3 z-30 w-7 h-7 flex items-center justify-center rounded text-[10px] text-[#45d0b2] border border-[#45d0b2]/50 bg-[#0a1a30]/80 hover:bg-[#45d0b2] hover:text-[#0b1525] transition-all cursor-pointer"
+            title="返回上级"
           >
-            <span>←</span>
-            <span>返回全国</span>
+            ❮
           </button>
         )}
 
@@ -364,30 +338,26 @@ export default function ChinaMap() {
           <span className="text-cyan-100 text-xs font-bold">{displayArea}</span>
         </div>
 
-        {/* 天气卡片 */}
-        <div className="absolute top-14 left-3 w-44 data-card rounded-lg p-3 z-20 pointer-events-none">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h4 className="text-cyan-300 text-sm font-bold">{weather.city}</h4>
-              <p className="text-gray-400 text-[10px]">气象实时预报</p>
-            </div>
-            <div className="text-3xl">{weather.days[0]?.icon || '☁️'}</div>
-          </div>
-          <div className="space-y-1.5 max-h-32 overflow-y-auto scrollbar-hide pointer-events-auto">
-            {weather.days.map((item, idx) => (
-              <div key={idx} className="flex items-center text-[11px] py-1 border-b border-cyan-500/10 last:border-0">
-                <span className="w-10 text-cyan-200/80">{item.date || item.day}</span>
-                <span className="text-base mx-1.5">{item.icon}</span>
-                <span className="text-gray-300 flex-1">{item.weather}</span>
-                <span className="text-cyan-300 font-mono text-[10px]">{item.temp}</span>
-              </div>
+        {/* 左侧面板：天气 */}
+        <div className="absolute top-14 left-3 w-[200px] z-20 pointer-events-auto"
+          style={{
+            background: 'linear-gradient(145deg, rgba(5, 20, 35, 0.5) 0%, rgba(5, 20, 35, 0.3) 100%)',
+            backdropFilter: 'blur(3px)',
+            border: '1px solid rgba(0, 247, 255, 0.15)',
+            borderRadius: '6px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+            padding: '8px 6px'
+          }}>
+          <WeatherMonitor city={weather.city} days={weather.days} loading={loading && weather.days.length === 0} />
+          <div className="h-2 flex flex-row justify-center gap-1 items-end pb-0.5 mt-1">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <span key={i} className="w-0.5 rounded-sm bg-[#00f7ff]" style={{ height: '3px', opacity: 1 - i * 0.1 }}></span>
             ))}
           </div>
         </div>
 
         {/* 右侧信息面板 */}
-        <div className="absolute top-14 right-3 w-40 z-20 space-y-2 pointer-events-none">
-          {/* 蔬菜均价 */}
+        <div className="absolute top-14 right-3 w-40 z-20 space-y-2 pointer-events-auto">
           <div className="data-card rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-xs">¥</span>
@@ -401,27 +371,48 @@ export default function ChinaMap() {
             </div>
           </div>
 
-          {/* 未来7天价格预测 */}
-          <div className="data-card rounded-lg p-3">
-            <h5 className="text-cyan-300 text-xs font-bold mb-2 text-center flex items-center justify-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-cyan-400"></span>
+          <div className="data-card rounded-lg p-3 flex flex-col h-[calc(100%-70px)]">
+            <div className="mb-2">
+              <div className="text-[10px] text-white/80 mb-1 tracking-wider text-right">▼ 选择监测品种</div>
+              <div className="relative">
+                <select
+                  value={selectedProduct}
+                  onChange={(e) => setSelectedProduct(e.target.value)}
+                  className="w-full appearance-none bg-transparent border border-cyan-400/30 rounded px-2 py-1 text-[12px] text-white font-medium text-right focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_8px_rgba(0,200,255,0.2)] cursor-pointer"
+                  style={{ direction: 'rtl' }}
+                >
+                  {productOptions.map((opt) => (
+                    <option key={opt} value={opt} className="bg-[#0a1a30] text-white">{opt}</option>
+                  ))}
+                </select>
+                <div className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none text-cyan-400 text-[10px]">▼</div>
+              </div>
+            </div>
+
+            <div className="w-full h-px bg-repeating-linear-gradient-90-cyan mb-2"></div>
+
+            <h5 className="text-[#B766FF] text-xs font-bold mb-2 text-right tracking-wider"
+              style={{ textShadow: '0 0 6px rgba(183, 102, 255, 0.4)' }}>
               未来7天价格预测
             </h5>
-            <div className="space-y-1.5 max-h-32 overflow-y-auto scrollbar-hide pointer-events-auto">
-              {vegetablePrice.forecast.map((item, idx) => (
-                <div key={idx} className="text-[11px]">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-gray-400">{item.date}</span>
-                    <span className="text-cyan-300 font-mono">{item.temp}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getPercentColor(item.percent)}`}>
-                      {item.percent}
-                    </span>
+
+            <div className="flex-1 flex flex-col justify-between overflow-hidden gap-1">
+              {provincePriceRanking.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="price-ranking-item grid grid-cols-3 gap-1 items-center px-1.5 py-0.5 rounded transition-all hover:bg-cyan-400/15 hover:border-cyan-400/40 hover:shadow-[0_0_15px_rgba(59,161,255,0.2)]"
+                  style={{ animationDelay: `${idx * 60}ms` }}
+                >
+                  <span className="text-[11px] text-white/80 font-medium text-left">{item.day}</span>
+                  <div className="text-center flex items-baseline justify-center gap-0.5">
+                    <span className="text-[13px] font-bold text-[#45d0b2]" style={{ textShadow: '0 0 8px rgba(69, 208, 178, 0.4)' }}>{item.price}</span>
+                    <span className="text-[9px] text-[#45d0b2]">元/斤</span>
                   </div>
-                  <div className="w-full h-1 bg-[#0a1a30] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-cyan-500 to-cyan-300 rounded-full"
-                      style={{ width: `${getPercentBar(item.percent)}%` }}
-                    ></div>
+                  <div className="flex justify-end">
+                    <div className="flex flex-col items-center justify-center bg-cyan-400/10 border border-cyan-400/25 rounded px-1 py-0.5 min-w-[42px]">
+                      <span className="text-[10px] font-bold text-[#3ba1ff]" style={{ textShadow: '0 0 5px rgba(59, 161, 255, 0.4)' }}>{item.probability}%</span>
+                      <span className="text-[8px] text-cyan-400/70">概率</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -434,13 +425,13 @@ export default function ChinaMap() {
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#050a15]/60 backdrop-blur-sm pointer-events-none">
             <div className="flex flex-col items-center gap-2">
               <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin"></div>
-              <div className="text-cyan-400 text-sm tracking-wider">地图加载中...</div>
+              <div className="text-cyan-400 text-sm tracking-wider">数据运算中...</div>
             </div>
           </div>
         )}
 
         {/* 地图 */}
-        <div className="absolute inset-0 z-10">
+        <div className={`absolute inset-0 z-10 ${animateClass}`}>
           <ReactECharts
             ref={chartRef}
             option={{ backgroundColor: 'transparent' }}
@@ -456,6 +447,11 @@ export default function ChinaMap() {
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-cyan-400/60 text-xs tracking-wider z-20 flex items-center gap-2 pointer-events-none">
           <span className="w-1 h-1 rounded-full bg-cyan-400 blink"></span>
           <span>{currentMap === 'china' ? '颜色深浅表示蔬菜均价，点击省份下钻' : '颜色/大小表示城市均价，点击城市切换'}</span>
+        </div>
+
+        {/* 右下角标签 */}
+        <div className="absolute bottom-3 right-4 text-[11px] text-cyan-400/50 font-mono tracking-wider z-20 pointer-events-none">
+          智慧农业数据分析平台 // 实时监控
         </div>
       </div>
     </Panel>

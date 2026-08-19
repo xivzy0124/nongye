@@ -23,6 +23,7 @@ export default function ReportContent() {
   }, []);
 
   const report = useMemo(() => generateReportData(region), [region, refresh]);
+  const chartKey = `${region}-${refresh}`;
 
   return (
     <div className="relative z-10 h-full max-w-[1600px] mx-auto p-3 flex flex-col">
@@ -99,17 +100,17 @@ export default function ReportContent() {
       {/* Main content grid */}
       <div className="flex-1 min-h-0 flex flex-col gap-2">
         {/* KPI Cards */}
-        <section className="flex-none">
+        <section key={`kpi-${chartKey}`} className="flex-none">
           <KPICards kpis={report.kpis} />
         </section>
 
         {/* Score + Trend */}
         <section className="flex-[1.1] min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2">
-          <div className="lg:col-span-3 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+          <div key={`score-${chartKey}`} className="lg:col-span-3 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
             style={{ boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
             <DecisionScore score={report.decisionScore} />
           </div>
-          <div className="lg:col-span-9 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+          <div key={`trend-${chartKey}`} className="lg:col-span-9 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
             style={{ animationDelay: '100ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
             <TrendChart data={report.trend} />
           </div>
@@ -117,11 +118,11 @@ export default function ReportContent() {
 
         {/* Risk Radar + Factors */}
         <section className="flex-[1.1] min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-2">
-          <div className="rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+          <div key={`radar-${chartKey}`} className="rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
             style={{ animationDelay: '200ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
             <RiskRadar indicators={report.riskRadar.indicators} values={report.riskRadar.values} />
           </div>
-          <div className="rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+          <div key={`factor-${chartKey}`} className="rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
             style={{ animationDelay: '300ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
             <FactorChart names={report.factors.names} values={report.factors.values} impacts={report.factors.impacts} />
           </div>
@@ -129,11 +130,11 @@ export default function ReportContent() {
 
         {/* Table + Timeline */}
         <section className="flex-[1.4] min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2">
-          <div className="lg:col-span-7 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+          <div key={`rec-${chartKey}`} className="lg:col-span-7 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
             style={{ animationDelay: '400ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
             <RecommendationsTable recommendations={report.recommendations} />
           </div>
-          <div className="lg:col-span-5 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
+          <div key={`alert-${chartKey}`} className="lg:col-span-5 rounded-lg bg-[#08101e]/85 border border-cyan-500/20 p-2.5 panel-animate"
             style={{ animationDelay: '500ms', boxShadow: '0 0 20px rgba(0, 200, 255, 0.08)' }}>
             <AlertTimeline alerts={report.alerts} />
           </div>
