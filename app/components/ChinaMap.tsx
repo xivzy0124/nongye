@@ -42,7 +42,10 @@ export default function ChinaMap() {
   const displayArea = currentCity || currentProvince;
 
   const [selectedProduct, setSelectedProduct] = useState(vegetablePrice.vegetable);
-  const productOptions = vegetablePrice.options?.length ? vegetablePrice.options : [vegetablePrice.vegetable, '黄瓜', '西红柿'];
+  const productOptions = useMemo(() => {
+    const raw = vegetablePrice.options?.length ? vegetablePrice.options : [vegetablePrice.vegetable, '黄瓜', '西红柿'];
+    return Array.from(new Set(raw));
+  }, [vegetablePrice.options, vegetablePrice.vegetable]);
 
   const provincePriceRanking = useMemo(() => {
     const base = 3.5 + (selectedProduct.charCodeAt(0) % 50) / 20 + (displayArea.length % 3);
@@ -200,14 +203,13 @@ export default function ChinaMap() {
 
     if (currentMap === 'province') {
       const cityKeys = Object.keys(provinceData.cities || {});
-      const normalized = name.replace(/市$/g, '').replace(/地区$/g, '').replace(/自治州$/g, '');
+      const normalized = name.replace(/市$/g, '').replace(/地区$/g, '').replace(/自治州$/g, '').replace(/盟$/g, '');
       const cityKey = cityKeys.find(k => {
-        const keyNorm = k.replace(/市$/g, '').replace(/地区$/g, '').replace(/自治州$/g, '');
+        const keyNorm = k.replace(/市$/g, '').replace(/地区$/g, '').replace(/自治州$/g, '').replace(/盟$/g, '');
         return k === name || keyNorm === normalized || normalized.startsWith(keyNorm) || k.startsWith(normalized);
       });
-      if (cityKey) {
-        setCurrentCity(cityKey);
-      }
+      // 全部城市都可点击：匹配到 mock 数据就用 mock 数据里的名字，否则直接用点击的城市名
+      setCurrentCity(cityKey || name);
       return;
     }
 

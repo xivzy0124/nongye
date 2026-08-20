@@ -369,7 +369,8 @@ export default function FieldFunnel3D() {
     dom.addEventListener('pointerdown', onDown);
     dom.addEventListener('pointerup', onUp);
 
-    const clock = new THREE.Clock();
+    let lastTime = performance.now();
+    let elapsed = 0;
     const tmp = new THREE.Vector3();
     const lp = new THREE.Vector3();
     const restGroups: Particle[][] = STAGES.map(() => []);
@@ -377,8 +378,11 @@ export default function FieldFunnel3D() {
 
     function animate() {
       raf = requestAnimationFrame(animate);
-      const dt = Math.min(0.05, clock.getDelta());
-      now = clock.elapsedTime;
+      const currentTime = performance.now();
+      const dt = Math.min(0.05, (currentTime - lastTime) / 1000);
+      lastTime = currentTime;
+      elapsed += dt;
+      now = elapsed;
 
       const sel = selectedRef.current;
       const fate = fateRef.current;

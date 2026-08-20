@@ -121,7 +121,7 @@ function makeCityData(
     },
     vegetablePrice: {
       vegetable,
-      options: [vegetable, '黄瓜', '西红柿'],
+      options: Array.from(new Set([vegetable, '黄瓜', '西红柿'])),
       forecast
     },
     flowAnalysis: { categories, targets, links },
@@ -270,7 +270,7 @@ function makeGenericProvinceData(name: string, capital?: { city: string; coord: 
     },
     vegetablePrice: {
       vegetable,
-      options: [vegetable, '黄瓜', '西红柿'],
+      options: Array.from(new Set([vegetable, '黄瓜', '西红柿'])),
       forecast: Array.from({ length: 7 }, (_, i) => {
         const date = `09-${20 + i}`;
         const p = (basePrice * (0.9 + Math.random() * 0.25)).toFixed(1);

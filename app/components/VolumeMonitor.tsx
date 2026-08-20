@@ -88,9 +88,10 @@ export default function VolumeMonitor() {
       borderWidth: 1,
       textStyle: { color: '#fff', fontSize: 10 },
       formatter: (params: any) => {
-        const idx = params.dataIndex ?? 0;
+        if (!params || typeof params.dataIndex !== 'number') return params?.name || '';
+        const idx = params.dataIndex;
         const market = radarMarkets[idx];
-        if (!market) return params.name;
+        if (!market) return params.name || '';
         return `${market.name}<br/>位置：${market.location}<br/>类型：${market.type}<br/>成交量指数：${params.value}`;
       }
     },
@@ -187,6 +188,7 @@ export default function VolumeMonitor() {
           <div className="relative w-24 h-24 radar-sweep rounded-full"></div>
         </div>
         <ReactECharts
+          key={`radar-${currentProvince}-${currentCity || ''}-${radarMarkets.map(m => m.id).join('-')}`}
           option={option}
           style={{ height: '100%', width: '100%' }}
           opts={{ renderer: 'canvas' }}
